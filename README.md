@@ -43,6 +43,21 @@ Pipeline: **Data cleaning → ID decoding → EDA → Feature engineering → Mo
 > Note: The repository focuses on the end-to-end workflow, modeling, and dashboard.  
 > Data files are excluded from version control.
 
+## Running locally (paths + data)
+
+This repository **does not include the full dataset files** (to keep the repo lightweight).
+
+To run the notebooks on your machine:
+
+1. Download the dataset separately (see the **Dataset** section above).
+2. Update the file paths inside the notebooks from local Windows paths (e.g., `D:\...`) to your local dataset location.
+
+Example:
+```python
+DATA_PATH = "data/diabetic_data.csv"
+MAP_PATH  = "data/IDS_mapping.csv"
+```
+
 
 ### Generated outputs
 - **`master_readmission_dataset.csv`**  
