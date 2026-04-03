@@ -1,118 +1,131 @@
-# Hospital Readmission Risk Dashboard (30-Day)
+# 🏥 Hospital Readmission Risk Dashboard (30-Day)
 
-This project predicts **30-day hospital readmission risk** and provides a **Power BI dashboard** for actionable decision support.  
-Pipeline: **Data cleaning → ID decoding → EDA → Feature engineering → Modeling (XGBoost) → Risk tiers → Dashboard**
+> **Can we identify high-risk patients before they leave the hospital — and give care teams a tool to act on it?**
 
-> ⚠️ Educational analytics project for decision-support demonstration only (not medical advice).
-
----
-
-## What this project does (in simple terms)
-- Takes historical hospital encounter data (each row = one hospital visit)
-- Builds a target: **Readmitted within 30 days (Yes/No)**
-- Learns risk patterns using machine learning (XGBoost)
-- Outputs a **risk probability** and **risk tier** (Low / Medium / High)
-- Shows everything in a **Power BI report**:
-  - Overview KPIs
-  - Key drivers (what correlates with readmission)
-  - High-risk encounter list sorted by risk score
+This project builds an end-to-end machine learning pipeline that predicts 30-day hospital readmission risk from historical encounter data, then surfaces actionable insights through a Power BI dashboard designed for clinical operations teams.
 
 ---
 
-## Dashboard Preview
-### Overview
-![Overview](images/overview.png)
+## 📊 Key Results
 
-### Drivers
-![Drivers](images/drivers.png)
+| Metric | Value |
+|---|---|
+| Model | XGBoost (PR-AUC optimized) |
+| High + Medium risk queue | 22.6% of encounters |
+| Readmissions captured in queue | 42.3% of all 30-day readmits |
+| Precision in risk queue | 20.9% (vs 11.2% baseline) |
+| Missed high-risk discharges | Significantly reduced via tiered triage |
 
-### High-Risk List
-![High Risk List](images/high_risk_list.png)
+> **Business impact:** Care teams can now focus follow-up calls on a manageable 22.6% queue that contains nearly half of all true readmissions — nearly doubling baseline precision.
 
 ---
 
-## Data used (what files mean)
-### Raw inputs
-- **`diabetic_data.csv`**  
-  Main encounter dataset (demographics, utilization, labs, meds, admission/discharge/source IDs, readmission label).
-- **`IDS_mapping.csv`**  
-  Lookup table to decode:
-  - admission type
-  - discharge disposition
-  - admission source
-> Note: The repository focuses on the end-to-end workflow, modeling, and dashboard.  
-> Data files are excluded from version control.
+## 🔍 The Problem
 
-## Running locally (paths + data)
+Hospital readmissions within 30 days are costly (penalized under CMS) and often preventable. The challenge: identifying *which* patients are truly high-risk at discharge, before limited care coordinator resources are spread too thin.
 
-This repository **does not include the full dataset files** (to keep the repo lightweight).
+**Without a model**, teams either follow up with everyone (inefficient) or no one (high risk). This project builds the middle ground — a risk tier system that concentrates intervention where it matters most.
 
-To run the notebooks on your machine:
+---
 
-1. Download the dataset separately (see the **Dataset** section above).
-2. Update the file paths inside the notebooks from local Windows paths (e.g., `D:\...`) to your local dataset location.
+## 🔄 Pipeline Overview
 
-Example:
-```python
-DATA_PATH = "data/diabetic_data.csv"
-MAP_PATH  = "data/IDS_mapping.csv"
+```
+Raw encounter data
+       ↓
+  Data cleaning + ID decoding (admission type, discharge disposition, source)
+       ↓
+  Exploratory data analysis
+       ↓
+  Feature engineering (utilization burden, medication load, LOS buckets)
+       ↓
+  Modeling — Logistic Regression baseline → XGBoost final
+       ↓
+  Risk scoring + tier assignment (Low / Medium / High)
+       ↓
+  Power BI dashboard for clinical ops
 ```
 
+---
 
-### Generated outputs
-- **`master_readmission_dataset.csv`**  
-  Clean master table with decoded labels + `readmit_30` target.
-- **`hospital_readmission_model_ready.csv`**  
-  Modeling dataset with selected features + engineered fields (leakage removed).
-- **`pbi_patient_risk_scores_ALL.csv`**  
-  Risk scores + tiers for all encounters used by Power BI.
-- **`best_readmission_model.pkl`**  
-  Saved trained model (XGBoost).
+## 💡 Key Findings
+
+- **Medication burden** is among the strongest drivers of readmission risk — patients on complex regimens need structured discharge planning
+- **Prior utilization** (inpatient + ER + outpatient visits combined) is highly predictive — frequent utilizers are disproportionately likely to return
+- **Discharge disposition** matters: patients discharged to home without support have elevated risk vs those discharged to skilled nursing facilities
+- **Length of stay** alone is a weak predictor — utilization history and medication complexity carry more signal
 
 ---
 
-## Method overview (how it works)
-### 1) Target creation
-`readmit_30 = 1` if readmission status is `<30`, else `0`.
+## 📋 Business Recommendations
 
-### 2) Feature engineering (examples)
-- **Prior utilization total** = inpatient + ER + outpatient visits  
-- Medication burden buckets / high meds flag  
-- LOS bucket (for reporting and dashboards)
-
-### 3) Modeling
-- Baseline: Logistic Regression (balanced)
-- Final: **XGBoost** (selected by PR-AUC improvement)
-- Since readmissions are imbalanced (~11%), evaluation focuses on:
-  - **PR-AUC**
-  - **Recall**
-  - thresholding by intervention capacity
-
-### 4) Risk tiers (actionable output)
-Encounters are categorized:
-- **High / Medium / Low** using probability thresholds
-- Power BI uses these tiers to filter and rank high-risk cases
+1. **Prioritize follow-up calls** for High + Medium tier patients within 48 hours of discharge
+2. **Flag high medication burden** patients for pharmacist-led discharge counseling
+3. **Use the Power BI High-Risk list** as the daily queue for care coordinators — sorted by risk score, filterable by discharge date and disposition
+4. **Track precision over time** — as interventions reduce readmissions in the queue, retrain the model quarterly to maintain calibration
 
 ---
 
-## Repository structure
+## 🖥️ Dashboard Preview
 
+**Overview — KPIs and risk distribution**
+![Overview](images/overview.png)
 
-```text
+**Key drivers — what correlates with readmission**
+![Drivers](images/drivers.png)
+
+**High-risk encounter list — sorted by risk score**
+![High-Risk List](images/high_risk_list.png)
+
+> Dashboard built in Power BI. The `.pbix` file is included in `/dashboard/` — open with Power BI Desktop (free).
+
+---
+
+## 📁 Repository Structure
+
+```
 hospital-readmission-risk-dashboard/
 ├── notebooks/
-│   ├── 1_Merge_data.ipynb
-│   ├── 2_EDA.ipynb
-│   ├── 3_feature_engineering.ipynb
-│   └── 4_Modeling.ipynb
-├── data/   # not included (dataset not uploaded)
+│   ├── 1_Merge_data.ipynb           # Data loading, ID decoding, master table
+│   ├── 2_EDA.ipynb                  # Distribution analysis, missing values, correlations
+│   ├── 3_feature_engineering.ipynb  # Utilization features, med burden, LOS buckets
+│   └── 4_Modeling.ipynb             # Baseline LR → XGBoost, threshold tuning, risk tiers
 ├── dashboard/
 │   └── Hospital_readmission_risk_dashboard.pbix
 ├── images/
 │   ├── overview.png
 │   ├── drivers.png
 │   └── high_risk_list.png
-├── output/  # optional 
+├── output/
 │   ├── best_readmission_model.pkl
 │   └── pbi_patient_risk_scores_ALL.csv
 └── README.md
+```
+
+---
+
+## 🗂️ Dataset
+
+**Source:** [UCI Diabetes 130-US Hospitals Dataset](https://archive.ics.uci.edu/dataset/296/diabetes+130-us+hospitals+for+years+1999-2008) — 101,766 encounters across 130 US hospitals (1999–2008)
+
+Data files are excluded from this repo to keep it lightweight. To run locally:
+
+1. Download `diabetic_data.csv` and `IDS_mapping.csv` from the link above
+2. Place them in the `/data/` folder
+3. Update paths in the notebooks if needed:
+```python
+DATA_PATH = "data/diabetic_data.csv"
+MAP_PATH  = "data/IDS_mapping.csv"
+```
+
+---
+
+## 🛠️ Tech Stack
+
+`Python` `pandas` `scikit-learn` `XGBoost` `matplotlib` `seaborn` `Power BI`
+
+---
+
+## ⚠️ Disclaimer
+
+This is an educational analytics project built for decision-support demonstration purposes only. It is not intended for clinical use and does not constitute medical advice.
